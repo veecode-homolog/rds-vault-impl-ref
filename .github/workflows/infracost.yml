@@ -1,0 +1,49 @@
+name: infracost
+
+on:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+      - "**"
+env:
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+jobs:
+  infracost:
+    name: Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: hashicorp/setup-terraform@v2
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          path: |
+            .terraform/**
+            .terraform.lock.hcl
+            plan_cache.json
+          key: terraform-lock-${{ steps.extract_branch.outputs.branch }}
+
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: ''
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Terraform Init
+        id: init
+        run: |
+             terraform init
+             terraform plan -no-color -out plan_cache.json 
+      # Generate Infracost JSON file as the baseline.
+      - name: Generate Infracost cost estimate baseline
+        run: |
+          infracost breakdown --show-skipped --path plan_cache.json

@@ -1,0 +1,12 @@
+apiVersion: veecode.backstage.io/v1alpha1
+kind: Database
+metadata:
+  name: "rdsvaultimplref"
+  annotations:
+    github.com/project-slug: veecode-homolog/rds-vault-impl-ref
+    backstage.io/techdocs-ref: dir:..
+    github.com/workflows: terraform-deploy.yml,terraform-destroy.yml,infracost.yml
+spec:
+  type: rds
+  lifecycle: experimental
+  owner: "group:default/admin"

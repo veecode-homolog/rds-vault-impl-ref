@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: -location
+  description: Location to import all  catalog components
+spec:
+  targets:
+    - ./.platform/*.yaml

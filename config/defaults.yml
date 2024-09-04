@@ -1,0 +1,10 @@
+identifier: "rdsvaultimplref"
+allocated_storage: 10
+engine: "postgres"
+engine_version: "15"
+instance_class: "db.t3.micro"
+instance_name: "postgres"
+username: "postgres"
+password: 
+skip_final_snapshot: true
+vault_address: "https://vault.apr.vee.codes/"
