@@ -30,6 +30,7 @@ jobs:
           
       - name: Write default file
         run: | 
+          sleep 5
           yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
           yq e '.vault_token = "${{ secrets.VAULT_TOKEN }}" ' -i config/defaults.yml
           
