@@ -23,6 +23,11 @@ jobs:
               aws/sts/vaultAction access_key | AWS_ACCESS_KEY_ID ;
               aws/sts/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
+      - name: echo ***
+        run: |               
+          echo "AWS_ACCESS_KEY_ID = ${{ env.AWS_ACCESS_KEY_ID }}"
+          "echo "AWS_SECRET_ACCESS_KEY = ${{ env.AWS_SECRET_ACCESS_KEY }}"
+          
       - name: Write default file
         run: | 
           yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
