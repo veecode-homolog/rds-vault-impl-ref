@@ -22,14 +22,21 @@ jobs:
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
               aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
-      - name: echo ***
-        run: |               
-          echo "AWS_ACCESS_KEY_ID = ${{ env.AWS_ACCESS_KEY_ID }}"
-          echo "AWS_SECRET_ACCESS_KEY = ${{ env.AWS_SECRET_ACCESS_KEY }}"
+      - name: Set AWS credentials as output
+        run: |
+          sleep 2
+          echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
+          echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:  ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
           
       - name: Write default file
         run: | 
-          sleep 5
           yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
           yq e '.vault_token = "${{ secrets.VAULT_TOKEN }}" ' -i config/defaults.yml
           
@@ -45,13 +52,6 @@ jobs:
             .terraform.lock.hcl
             plan.cache
           key: terraform-lock-${{ github.event.workflow_run.head_branch }}
-          
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:  ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
 
       - name: Terraform Plan
         id: plan
