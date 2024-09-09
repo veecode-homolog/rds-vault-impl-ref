@@ -19,29 +19,14 @@ jobs:
           yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
           yq e '.vault_token = "${{ secrets.VAULT_TOKEN }}" ' -i config/defaults.yml
 
-      - name: Import AWS Secrets 
-        id: import-secrets
-        env:
-          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-        run: |
-          echo "Fetching AWS credentials from Vault..."
-          response=$(curl --silent --header "X-Vault-Token: $VAULT_TOKEN" \
-            $VAULT_ADDR/v1/aws/creds/vaultAction)
-
-          echo "Parsing response..."
-          aws_access_key=$(echo $response | jq -r .data.access_key)
-          aws_secret_key=$(echo $response | jq -r .data.secret_key)
-          aws_session_token=$(echo $response | jq -r .data.security_token)
-
-          echo "Setting output and environment variables..."
-          echo "::set-output name=aws_access_key::$aws_access_key"
-          echo "::set-output name=aws_secret_key::$aws_secret_key"
-          echo "::set-output name=aws_session_token::$aws_session_token"
-
-          echo "AWS_ACCESS_KEY_ID=$aws_access_key" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$aws_secret_key" >> $GITHUB_ENV
-          echo "AWS_SESSION_TOKEN=$aws_session_token" >> $GITHUB_ENV  
+      - name: Import AWSSecrets
+        uses: hashicorp/vault-action@v2
+        with:
+          url: https://vault.apr.vee.codes
+          token: ${{ secrets.VAULT_TOKEN }}
+          secrets: |
+              aws/sts/vaultAction access_key | AWS_ACCESS_KEY_ID ;
+              aws/sts/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
       - name: Extract branch name
         shell: bash
