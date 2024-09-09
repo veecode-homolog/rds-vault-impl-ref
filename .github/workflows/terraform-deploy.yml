@@ -26,7 +26,7 @@ jobs:
       - name: echo ***
         run: |               
           echo "AWS_ACCESS_KEY_ID = ${{ env.AWS_ACCESS_KEY_ID }}"
-          "echo "AWS_SECRET_ACCESS_KEY = ${{ env.AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_SECRET_ACCESS_KEY = ${{ env.AWS_SECRET_ACCESS_KEY }}"
           
       - name: Write default file
         run: | 
