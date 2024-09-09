@@ -1,63 +1,32 @@
+resource "aws_security_group" "rds_sg" {
+  name        = "${local.config.identifier}-security-group"
+  description = "Security group for RDS instance"
+  vpc_id      = "${local.config.vpc_id}"
 
-resource "vault_mount" "kvv2" {
-  path        = "root_db"
-  type        = "kv"
-  options     = { version = "2" }
-  description = "KV Version 2 secret engine mount"
-}
-
-resource "vault_kv_secret_v2" "kvv2" {
-  mount                      = vault_mount.kvv2.path
-  name                       = "secret"
-  cas                        = 1
-  delete_all_versions        = true
-  data_json                  = jsonencode(
-  {
-    master       = "${local.config.password}"
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-  )
 
-}
-
-resource "vault_mount" "db" {
-  path = "postgres"
-  type = "database"
-}
-
-resource "vault_database_secrets_mount" "db" {
-  path = "datasources"
-
-  postgresql {
-    name              = "postgres"
-    username          = aws_db_instance.RDS_VKPR.username
-    password          = local.config.password
-    connection_url    = "postgresql://{{username}}:{{password}}@${aws_db_instance.RDS_VKPR.address}:${aws_db_instance.RDS_VKPR.port}/postgres"
-    verify_connection = true
-    allowed_roles = [
-      "dev2","readWrite","readOnly"
-    ]
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-  depends_on = [ aws_db_instance.RDS_VKPR, null_resource.check_database_state]
-}
 
-resource "vault_database_secret_backend_role" "readOnly" {
-  name    = "readOnly"
-  backend = vault_database_secrets_mount.db.path
-  db_name = vault_database_secrets_mount.db.postgresql[0].name
-  creation_statements = [
-    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
-  ]
+  tags = {
+    Name = "rds-security-group"
+  }
 }
-
-resource "vault_database_secret_backend_role" "readWrite" {
-  name    = "readWrite"
-  backend = vault_database_secrets_mount.db.path
-  db_name = vault_database_secrets_mount.db.postgresql[0].name
-  creation_statements = [
-    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-    "GRANT ALL ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
-  ]
+resource "aws_db_subnet_group" "my_db_subnet_group" {
+  name       = "${local.config.identifier}-subnet-group"
+  subnet_ids = local.config.subnet_ids
+  tags = {
+    Name = "${local.config.identifier}-subnets"
+  }
 }
 
 resource "aws_db_instance" "RDS_VKPR" {
@@ -71,11 +40,12 @@ resource "aws_db_instance" "RDS_VKPR" {
     password = local.config.password
     skip_final_snapshot = true
     publicly_accessible = true
+    vpc_security_group_ids = [aws_security_group.rds_sg.id]
+    db_subnet_group_name   = aws_db_subnet_group.my_db_subnet_group.name     
     tags = {
     name = "VKPR-RDS"
   }
 }
-
 
 resource "null_resource" "check_database_state" {
   depends_on = [ aws_db_instance.RDS_VKPR ]
@@ -117,6 +87,88 @@ done
 # Se chegou até aqui, todas as tentativas falharam
 echo "Não foi possível conectar ao banco de dados após $MAX_ATTEMPTS tentativas."
 exit 1  # Sair com status de falha
+    EOF
+  }
+}
+
+resource "null_resource" "create_connection_vault" {
+  depends_on = [ null_resource.check_database_state ]
+  provisioner "local-exec" {
+
+    command = <<EOF
+!/bin/bash
+
+# Variáveis de conexão com o banco de dados e com o Vault
+
+DB_IDENTIFIER="${local.config.identifier}"
+DB_HOST="${aws_db_instance.RDS_VKPR.address}"
+DB_USER="${aws_db_instance.RDS_VKPR.username}"
+DB_PASS="${local.config.password}"
+DB_NAME="postgres"
+VAULT_ADDR="${local.config.vault_address}"
+VAULT_TOKEN="${local.config.vault_token}"
+VAULT_DATABASE_ENGINE="${local.config.vault_database_engine}"
+
+# Cria a conexão com o banco de dados no Vault
+if curl --header "X-Vault-Token: $VAULT_TOKEN" \
+   --request POST \
+   --data "{
+      \"plugin_name\": \"postgresql-database-plugin\",
+      \"allowed_roles\": [\"$DB_IDENTIFIER-readOnly\", \"$DB_IDENTIFIER-readWrite\"],
+      \"connection_url\": \"postgresql://{{username}}:{{password}}@$DB_HOST:5432/postgres\",
+      \"username\": \"$DB_USER\",
+      \"password\": \"$DB_PASS\"
+      }" \
+   $VAULT_ADDR/v1/$VAULT_DATABASE_ENGINE/config/$DB_IDENTIFIER; then
+    echo "Conexão com o banco de dados criada com sucesso!"
+else
+    echo "Erro ao criar a conexão com o banco de dados."
+    exit 1
+fi
+
+# Cria as roles de conexão no Vault
+if curl --header "X-Vault-Token: $VAULT_TOKEN" \
+   --request POST \
+   --data "{
+      \"db_name\": \"$DB_IDENTIFIER\",
+      \"creation_statements\": \"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';GRANT SELECT ON ALL TABLES IN SCHEMA public TO \\\"{{name}}\\\";\"
+      }" \
+   $VAULT_ADDR/v1/$VAULT_DATABASE_ENGINE/roles/$DB_IDENTIFIER-readOnly; then
+    echo "Role de conexão somente leitura criada com sucesso!"
+else
+    echo "Erro ao criar a role de conexão somente leitura."
+    exit 1
+fi
+
+if curl --header "X-Vault-Token: $VAULT_TOKEN" \
+   --request POST \
+   --data "{
+      \"db_name\": \"$DB_IDENTIFIER\",
+      \"creation_statements\": \"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';GRANT ALL ON ALL TABLES IN SCHEMA public TO \\\"{{name}}\\\";\"
+      }" \
+   $VAULT_ADDR/v1/$VAULT_DATABASE_ENGINE/roles/$DB_IDENTIFIER-readWrite; then
+    echo "Role de conexão com permissão de escrita criada com sucesso!"
+else
+    echo "Erro ao criar a role de conexão com permissão de escrita."
+    exit 1
+fi
+
+# Cria o secret de usuário, host e password do banco de dados no Vault
+if curl --header "X-Vault-Token: $VAULT_TOKEN" \
+   --request POST \
+   --data "{ 
+        \"data\": {
+              \"username\": \"$DB_USER\",
+              \"password\": \"$DB_PASS\",
+              \"host\": \"$DB_HOST\"
+        }
+      }" \
+   $VAULT_ADDR/v1/secrets/data/environment-vault-impl-ref/databases/$DB_IDENTIFIER; then
+    echo "Secret de usuário, host e password do banco de dados criado com sucesso!"
+else
+    echo "Erro ao criar o secret de usuário, host e password do banco de dados."
+    exit 1
+fi    
     EOF
   }
 }

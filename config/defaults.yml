@@ -1,4 +1,4 @@
-identifier: "rdsvaultimplref"
+identifier: "rds-vault-impl-ref"
 allocated_storage: 10
 engine: "postgres"
 engine_version: "15"
@@ -6,5 +6,9 @@ instance_class: "db.t3.micro"
 instance_name: "postgres"
 username: "postgres"
 password: 
+environment_vault_path: "secrets/environment-vault-impl-ref"
 skip_final_snapshot: true
 vault_address: "https://vault.apr.vee.codes/"
+vault_database_engine: database
+vpc_id: vpc-051721395ecf1f7aa
+subnet_ids: ["subnet-04dda6147dd9410f1", "subnet-05d5b5e1ddfd856ca","subnet-0cff2b6d86f900891"]
