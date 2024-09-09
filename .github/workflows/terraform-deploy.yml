@@ -14,11 +14,6 @@ jobs:
           MASTER=`tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo`  
           echo "Master=$MASTER" >> $GITHUB_ENV
 
-      - name: Write default file
-        run: | 
-          sleep 1
-          yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
-          yq e '.vault_token = "${{ secrets.VAULT_TOKEN }}" ' -i config/defaults.yml
 
       - name: Import AWSSecrets
         uses: hashicorp/vault-action@v2
@@ -29,6 +24,12 @@ jobs:
               aws/sts/vaultAction access_key | AWS_ACCESS_KEY_ID ;
               aws/sts/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
+      - name: Write default file
+        run: | 
+          sleep 1
+          yq e '.password = "${{ env.Master }}" ' -i config/defaults.yml
+          yq e '.vault_token = "${{ secrets.VAULT_TOKEN }}" ' -i config/defaults.yml
+          
       - name: Extract branch name
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
