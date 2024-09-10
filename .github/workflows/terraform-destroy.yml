@@ -15,8 +15,8 @@ jobs:
 #          cli_config_credentials_token: 
       - name: GET Root_DB
         run: |
-          MASTER=`curl  --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}"  https://vault.apr.vee.codes/v1/root_db/data/secret?version=1 |jq -r .data.data.master` 
-          echo $MASTER
+          MASTER=`curl  --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}"  https://vault.apr.vee.codes/v1/secrets/data/environment-vault-impl-ref/databases/rds-vault-impl-ref |jq -r .data.data.password` 
+          echo $MASTER          /v1/secrets/data/environment-vault-impl-ref/databases/rds-vault-impl-ref
           echo "master=$MASTER" >> $GITHUB_ENV
       - name: Write default file
         run: | 
@@ -33,12 +33,29 @@ jobs:
             .terraform.lock.hcl
             plan.cache
           key: terraform-lock-${{ github.event.workflow_run.head_branch }}
+      - name: Import AWS Secrets
+        uses: hashicorp/vault-action@v2
+        with:
+          url: https://vault.apr.vee.codes
+          token: ${{ secrets.VAULT_TOKEN }}
+          secrets: |
+              aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
+              aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
+
+      - name: Set AWS credentials as output
+        id: aws-credentials-output
+        run: |
+          sleep 10
+          echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
+          echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id:  ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
       - name: Terraform destroy
         run: |
           terraform init
