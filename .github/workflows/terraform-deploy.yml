@@ -24,7 +24,7 @@ jobs:
 
       - name: Set AWS credentials as output
         run: |
-          sleep 5
+          sleep 10
           echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
           echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
 
@@ -89,7 +89,7 @@ jobs:
 
       - name: Set AWS credentials as output
         run: |
-          sleep 5
+          sleep 10
           echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
           echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
 
