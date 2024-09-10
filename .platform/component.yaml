@@ -6,6 +6,8 @@ metadata:
     github.com/project-slug: veecode-homolog/rds-vault-impl-ref
     backstage.io/techdocs-ref: dir:..
     github.com/workflows: terraform-deploy.yml,terraform-destroy.yml,infracost.yml
+  environment:
+    endpoint: rds-vault-impl-ref.cpzxdcn9a81i.us-east-1.rds.amazonaws.com
 spec:
   type: rds
   lifecycle: experimental
