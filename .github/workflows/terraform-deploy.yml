@@ -23,6 +23,7 @@ jobs:
               aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
       - name: Set AWS credentials as output
+        id: aws-credentials-output
         run: |
           sleep 10
           echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
@@ -108,8 +109,8 @@ jobs:
 
       - name: Write Catalogo Info
         run: |
-          yq e '.metadata.environment.endpoint = ${{ env.endpoint }}' -i .platform/catalog-info.yaml
-          cat .platform/catalog-info.yaml
+          yq e '.metadata.environment.endpoint = ${{ env.endpoint }}' -i .platform/component.yaml
+          cat .platform/component.yaml
 
       - name: Temporarily disable branch protection
         uses: benjefferies/branch-protection-bot@master
