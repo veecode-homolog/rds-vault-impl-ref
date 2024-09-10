@@ -13,7 +13,7 @@ jobs:
           MASTER=`tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo`  
           echo "Master=$MASTER" >> $GITHUB_ENV
 
-      - name: Import AWSSecrets
+      - name: Import AWS Secrets
         uses: hashicorp/vault-action@v2
         with:
           url: https://vault.apr.vee.codes
@@ -77,11 +77,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: hashicorp/setup-terraform@v2
+      
+      - name: Import AWS Secrets
+        uses: hashicorp/vault-action@v2
+        with:
+          url: https://vault.apr.vee.codes
+          token: ${{ secrets.VAULT_TOKEN }}
+          secrets: |
+              aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
+              aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
+
+      - name: Set AWS credentials as output
+        run: |
+          sleep 5
+          echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
+          echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:  ${{ needs.apply.outputs.aws_access_key }}
-          aws-secret-access-key: ${{ needs.apply.outputs.aws_secret_key }}
+          aws-access-key-id:  ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
           
       - name: GET Endpoint RDS
