@@ -63,7 +63,7 @@ jobs:
       - name: Terraform apply
         run: terraform apply -input=false -no-color -auto-approve plan_cache.json
       - name: Kubeconf artefact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: kubeconf
           path: |
@@ -87,12 +87,6 @@ jobs:
           secrets: |
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
               aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
-
-      - name: Set AWS credentials as output
-        run: |
-          sleep 10
-          echo "aws_access_key=${{ env.AWS_ACCESS_KEY_ID }}" >> $GITHUB_OUTPUT
-          echo "aws_secret_key=${{ env.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
