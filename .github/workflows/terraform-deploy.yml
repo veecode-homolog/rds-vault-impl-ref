@@ -5,6 +5,9 @@ on:
 jobs:
   apply:
     runs-on: ubuntu-latest
+    outputs:
+      AWS_ACCESS_KEY_ID: ${{ steps.ouput-iam-aws-access-key.outputs.out }}
+      AWS_SECRET_ACCESS_KEY: ${{ steps.ouput-iam-aws-secret-key.outputs.out }}    
     steps:
       - uses: actions/checkout@v3
       - uses: hashicorp/setup-terraform@v2
@@ -14,13 +17,28 @@ jobs:
           echo "Master=$MASTER" >> $GITHUB_ENV
 
       - name: Import AWS Secrets
+        id: import-aws-secrets
         uses: hashicorp/vault-action@v2
         with:
           url: https://vault.apr.vee.codes
           token: ${{ secrets.VAULT_TOKEN }}
           secrets: |
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
-              aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
+              aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ; 
+
+      - uses: cloudposse/github-action-secret-outputs@main
+        id: ouput-iam-aws-access-key
+        with:
+          secret: ${{ secrets.VAULT_TOKEN }}
+          op: encode
+          in: ${{ env.AWS_ACCESS_KEY_ID }}
+
+      - uses: cloudposse/github-action-secret-outputs@main
+        id: ouput-iam-aws-secret-key
+        with:
+          secret: ${{ secrets.VAULT_TOKEN }}
+          op: encode
+          in: ${{ env.AWS_SECRET_ACCESS_KEY }}        
 
       - name: Set AWS credentials as output
         id: aws-credentials-output
@@ -88,11 +106,25 @@ jobs:
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
               aws/creds/vaultAction secret_key | AWS_SECRET_ACCESS_KEY ;  
 
+      - uses: cloudposse/github-action-secret-outputs@main
+        id: ouput-iam-aws-access-key
+        with:
+          secret: ${{ secrets.VAULT_TOKEN }}
+          op: decode
+          in: ${{ needs.apply.outputs.AWS_ACCESS_KEY_ID }}
+
+      - uses: cloudposse/github-action-secret-outputs@main
+        id: ouput-iam-aws-secret-key
+        with:
+          secret: ${{ secrets.VAULT_TOKEN }}
+          op: decode
+          in: ${{ needs.apply.outputs.AWS_SECRET_ACCESS_KEY }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:  ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id:  ${{ steps.ouput-iam-aws-access-key.outputs.out }}
+          aws-secret-access-key: ${{ steps.ouput-iam-aws-secret-key.outputs.out }}
           aws-region: us-east-1
           
       - name: GET Endpoint RDS
