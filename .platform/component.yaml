@@ -1,7 +1,7 @@
 apiVersion: veecode.backstage.io/v1alpha1
 kind: Database
 metadata:
-  name: "rdsvaultimplref"
+  name: "rds-vault-impl-ref"
   annotations:
     github.com/project-slug: veecode-homolog/rds-vault-impl-ref
     backstage.io/techdocs-ref: dir:..
