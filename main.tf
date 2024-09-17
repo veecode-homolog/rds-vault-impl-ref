@@ -153,6 +153,21 @@ else
     exit 1
 fi
 
+if curl --header "X-Vault-Token: $VAULT_TOKEN" \
+   --request POST \
+   --data "{
+      \"db_name\": \"$DB_IDENTIFIER\",
+      \"default_ttl\": \"1h\",
+      \"creation_statements\": \"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';GRANT postgres TO \\\"{{name}}\\\";\"
+      }" \
+   $VAULT_ADDR/v1/$VAULT_DATABASE_ENGINE/roles/$DB_IDENTIFIER-vaultActions; then
+    echo "Role para o githubActions criada com sucesso!"
+else
+    echo "Erro ao criar a role para o githubActions."
+    exit 1
+fi
+
+
 # Cria o secret de usuário, host e password do banco de dados no Vault
 if curl --header "X-Vault-Token: $VAULT_TOKEN" \
    --request POST \
