@@ -157,9 +157,7 @@ if curl --header "X-Vault-Token: $VAULT_TOKEN" \
    --request POST \
    --data "{
       \"db_name\": \"$DB_IDENTIFIER\",
-      \"default_ttl\": \"1h\",
-      \"max_ttl\": \"1h\",
-      \"creation_statements\": \"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';GRANT postgres TO \\\"{{name}}\\\";\"
+      \"creation_statements\": \"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' CREATEDB;GRANT postgres TO \\\"{{name}}\\\";\"
       }" \
    $VAULT_ADDR/v1/$VAULT_DATABASE_ENGINE/roles/$DB_IDENTIFIER-vaultActions; then
     echo "Role para o githubActions criada com sucesso!"
