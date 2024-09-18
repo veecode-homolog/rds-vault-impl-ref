@@ -20,7 +20,7 @@ jobs:
         id: import-aws-secrets
         uses: hashicorp/vault-action@v2
         with:
-          url: https://vault.apr.vee.codes
+          url: https://vault.vault-database-engine.vkpr.platform.vee.codes
           token: ${{ secrets.VAULT_TOKEN }}
           secrets: |
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
@@ -100,7 +100,7 @@ jobs:
       - name: Import AWS Secrets
         uses: hashicorp/vault-action@v2
         with:
-          url: https://vault.apr.vee.codes
+          url: https://vault.vault-database-engine.vkpr.platform.vee.codes
           token: ${{ secrets.VAULT_TOKEN }}
           secrets: |
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;

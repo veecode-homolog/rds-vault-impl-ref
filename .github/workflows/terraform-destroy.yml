@@ -15,7 +15,7 @@ jobs:
 #          cli_config_credentials_token: 
       - name: GET Root_DB
         run: |
-          MASTER=`curl  --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}"  https://vault.apr.vee.codes/v1/secrets/data/environment-vault-impl-ref/databases/rds-vault-impl-ref |jq -r .data.data.password` 
+          MASTER=`curl  --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}"  https://vault.vault-database-engine.vkpr.platform.vee.codes/v1/secrets/data/environment-vault-impl-ref/databases/rds-vault-impl-ref |jq -r .data.data.password` 
           echo $MASTER          /v1/secrets/data/environment-vault-impl-ref/databases/rds-vault-impl-ref
           echo "master=$MASTER" >> $GITHUB_ENV
       - name: Write default file
@@ -36,7 +36,7 @@ jobs:
       - name: Import AWS Secrets
         uses: hashicorp/vault-action@v2
         with:
-          url: https://vault.apr.vee.codes
+          url: https://vault.vault-database-engine.vkpr.platform.vee.codes
           token: ${{ secrets.VAULT_TOKEN }}
           secrets: |
               aws/creds/vaultAction access_key | AWS_ACCESS_KEY_ID ;
